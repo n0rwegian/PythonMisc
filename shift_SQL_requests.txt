@@ -1,0 +1,52 @@
+-- (Task 1a. Return code, name for products that weren't purshased in the previous month)
+SELECT code, name
+FROM products prod
+WHERE id NOT IN (
+	SELECT DISTINCT product_id
+	FROM purchase_receipts pr
+	     INNER JOIN purchases purc ON (pr.purchase_id = purc.id)
+	WHERE (date_part('month', datetime) = date_part('month', localtimestamp) - 1) AND (date_part('year', datetime) = date_part('year', localtimestamp))
+)
+
+
+
+-- (Task 1b. Return first_name, last_name for cashiers that have no sales and most effective cashiers in the previous month by shops)
+
+-- no-sellers by shops /also show shops with no no-sellers/
+SELECT s.id as shop_id, first_name, last_name
+FROM shops s
+	 LEFT JOIN (
+	SELECT shop_id, first_name, last_name
+	FROM employees e
+		 LEFT JOIN (SELECT DISTINCT seller_id
+					FROM purchases
+					WHERE (date_part('month', datetime) = date_part('month', localtimestamp) - 1) AND (date_part('year', datetime) = date_part('year', localtimestamp))) purc_april
+				ON (e.id = purc_april.seller_id)
+	WHERE job_name IN ('cashier', 'senior cashier') AND seller_id IS NULL
+	GROUP BY 1, 2, 3
+	) as no_sellers ON (s.id = no_sellers.shop_id)
+ORDER BY s.id;
+
+-- most effective cashiers by shop /if only active shops needed/
+SELECT shop_id, first_name, last_name
+	FROM (
+		SELECT shop_id, first_name, last_name
+				,SUM(amount)
+			   ,RANK() OVER(PARTITION BY shop_id ORDER BY SUM(amount) DESC) as rnk
+		FROM employees e
+			 INNER JOIN purchases purc ON (e.id = purc.seller_id)
+		WHERE (date_part('month', datetime) = date_part('month', localtimestamp) - 1) AND (date_part('year', datetime) = date_part('year', localtimestamp))
+			   AND job_name IN ('cashier', 'senior cashier')
+		GROUP BY 1, 2, 3
+		) AS ranked_purchases
+WHERE rnk = 1
+ORDER BY shop_id;
+
+-- (Task 1c. Return sell amount by regions, descending order by amount)
+SELECT region
+	  ,SUM(amount) AS amount
+FROM shops s
+	 LEFT JOIN employees e ON (s.id = e.shop_id)
+	 LEFT JOIN purchases purc ON (e.id = purc.seller_id)
+GROUP BY region
+ORDER BY amount DESC;
