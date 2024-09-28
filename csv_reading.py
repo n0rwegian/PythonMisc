@@ -2,7 +2,8 @@ import csv
 import requests
 
 
-'''url = 'https://stepik.org/media/attachments/lesson/24473/Crimes.csv'
+"""
+url = "https://stepik.org/media/attachments/lesson/24473/Crimes.csv"
 
 with requests.get(url, stream=True) as response:
     response.raise_for_status()
@@ -12,7 +13,8 @@ with requests.get(url, stream=True) as response:
         file.flush()
         file.close()
 
-# print('Successfully downloaded')'''
+# print('Successfully downloaded')
+"""
 
 crimes = {}
 
